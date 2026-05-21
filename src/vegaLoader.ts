@@ -1,4 +1,4 @@
-import { normalizePath, TFile } from "obsidian";
+import { normalizePath, TFile, MarkdownPreviewView, Notice } from "obsidian";
 import { Loader } from "vega";
 import VegaVisualizationsPlugin from "./main";
 
@@ -47,12 +47,22 @@ export default class VegaLoader implements Loader {
 
     public async file(filename: string, _?: any): Promise<string> {
         const vault = this.plugin.app.vault;
-        const file = vault.getAbstractFileByPath(filename);
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownPreviewView);
 
-        if (file instanceof TFile) {
-            const result = await vault.cachedRead(file);
-            return result;
+        if (activeView) {
+            const mdFile = activeView.file;
+            const embeddedFile = plugin.app.metadataCache.getFirstLinkpathDest(filename, mdFile)
+            if(embeddedFile) {
+                const filepath = plugin.app.vault.getResourcePath(embeddedFile);
+                new Notice(filepath);
+                if (file instanceof TFile) {
+                    const result = await vault.cachedRead(file);
+                    return result;
+                }
+            };
+            // const file = vault.getAbstractFileByPath(filename);
         }
+
 
         throw Error(`URL "${filename}" is not a file or does not exist`);
     }
