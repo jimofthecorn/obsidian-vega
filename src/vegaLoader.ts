@@ -1,6 +1,7 @@
-import { normalizePath, TFile, MarkdownPreviewView, Notice } from "obsidian";
+import { normalizePath, TFile, MarkdownView, Notice } from "obsidian";
 import { Loader } from "vega";
 import VegaVisualizationsPlugin from "./main";
+
 
 export default class VegaLoader implements Loader {
     private plugin: VegaVisualizationsPlugin;
@@ -47,23 +48,18 @@ export default class VegaLoader implements Loader {
 
     public async file(filename: string, _?: any): Promise<string> {
         const vault = this.plugin.app.vault;
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownPreviewView);
+        const activeFile = this.plugin.app.workspace.getActiveFile();
+        // const activeView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 
-        if (activeView) {
-            const mdFile = activeView.file;
-            const embeddedFile = plugin.app.metadataCache.getFirstLinkpathDest(filename, mdFile)
-            if(embeddedFile) {
-                const filepath = plugin.app.vault.getResourcePath(embeddedFile);
-                new Notice(filepath);
-                if (file instanceof TFile) {
-                    const result = await vault.cachedRead(file);
-                    return result;
-                }
-            };
-            // const file = vault.getAbstractFileByPath(filename);
+        if (!activeFile) {
+            throw Error(`Problem finding "${filename}": active file is null`);
         }
-
-
-        throw Error(`URL "${filename}" is not a file or does not exist`);
+        const activeFolder = activeFile.parent.path;
+        const dataFile = vault.getAbstractFileByPath(filename);
+        if (!(dataFile instanceof TFile)) {
+            throw Error(`Problem finding "${filename}": "${dataFile}" is not a TFile (activeFolder = "${activeFolder}")`);
+        }
+        const result = await vault.cachedRead(dataFile);
+        return result;
     }
 }
